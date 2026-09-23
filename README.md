@@ -35,6 +35,8 @@ its own GatewayClass.
 - `kubectl`, `helm`, and `curl` on your PATH. The Istio sample also downloads
   `istioctl` for you.
 - `jq` is used to pretty-print a few responses (optional but nice).
+- `k9s` is optional. It gives a live visual view of the resources while the
+  samples run. Install it with `bash setup/install-k9s.sh` (see "Using k9s").
 
 No LoadBalancer is required: the samples reach gateways with
 `kubectl port-forward`, so they work even on clusters with no cloud load
@@ -67,6 +69,45 @@ bash setup/verify.sh
 Each sample prints every command before it runs it, states what to expect, then
 shows the real output, so you can follow along or read the scripts as a guide.
 
+## Using k9s (optional visual pane)
+
+The samples prove behavior through request/response (`curl` status codes, header
+dumps, per-pod request counts), so the terminal is where the payoff shows up.
+[k9s](https://k9scli.io/) is a great companion for the other half: *seeing*
+resources reconcile and reading logs while a sample runs.
+
+```bash
+bash setup/install-k9s.sh          # installs k9s locally (via webi)
+source ~/.config/envman/PATH.env   # add k9s to PATH in this shell
+export K9S_CONFIG_DIR="$PWD/k9s"   # use this repo's aliases
+k9s
+```
+
+A two-pane layout works well:
+
+- Pane A (k9s): watch the Gateway flip to `Programmed`, the HTTPRoute to
+  `Accepted`, the Envoy/waypoint pods appear, and tail gateway logs.
+- Pane B (`./run.sh N`): applies the YAML and runs the request tests.
+
+The samples pause between "apply" and "test," so you can flip to k9s and show
+reconciliation before running the proof.
+
+Handy inside k9s (aliases provided in `k9s/aliases.yaml`):
+
+| Type this | Jumps to |
+|-----------|----------|
+| `:gw`     | Gateways |
+| `:route`  | HTTPRoutes |
+| `:gc`     | GatewayClasses |
+| `:btp`    | Envoy Gateway BackendTrafficPolicies (rate limits) |
+| `:ctp`    | Envoy Gateway ClientTrafficPolicies (client IP) |
+| `:vs`     | Istio VirtualServices (regex rewrite) |
+| `:wasm`   | Higress WasmPlugins (auth) |
+| `:authz`  | Istio AuthorizationPolicies (ambient) |
+
+Native k9s keys that pair well: `l` (logs), `d` (describe), `y` (view YAML),
+`Shift-F` (port-forward), `0`/`<num>` to filter namespaces.
+
 ## How it is laid out
 
 ```
@@ -80,8 +121,11 @@ kubernetes-gateway-samples/
     03-envoy-gateway.sh install Envoy Gateway (from its GitHub release manifest)
     04-higress.sh       install Higress (from its public Helm repo)
     05-apps.sh          deploy the demo apps (HTTP echo, gRPC echo)
+    install-k9s.sh      install the optional k9s terminal UI
     verify.sh           check controllers and apps are ready
+    uninstall.sh        remove everything
   apps/                 echo (HTTP, reflects the request) and grpc-echo (fortio)
+  k9s/aliases.yaml      k9s aliases for the CRDs these samples use
   samples/NN-name/      one folder per sample: the YAML applied, run.sh, reset.sh
   run.sh                the sample runner
 ```

@@ -1,0 +1,15 @@
+# k9s aliases for the resources these samples use. Point k9s at this directory
+# with:  export K9S_CONFIG_DIR="$PWD/k9s"   then run  k9s
+# Inside k9s, type ":" followed by an alias (e.g. ":gw") to jump to that view.
+aliases:
+  # Core Gateway API
+  gw: gateways.gateway.networking.k8s.io
+  route: httproutes.gateway.networking.k8s.io
+  gc: gatewayclasses.gateway.networking.k8s.io
+  # Envoy Gateway policies
+  btp: backendtrafficpolicies.gateway.envoyproxy.io
+  ctp: clienttrafficpolicies.gateway.envoyproxy.io
+  # Istio / Higress
+  vs: virtualservices.networking.istio.io
+  authz: authorizationpolicies.security.istio.io
+  wasm: wasmplugins.extensions.istio.io
