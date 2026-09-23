@@ -1,0 +1,17 @@
+# A Gateway of class "istio". Istio auto-provisions a gateway Deployment +
+# Service named "<name>-istio" in this namespace and binds this object to it.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: demo-gateway
+  namespace: istio-demo
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: api.example.com
+      allowedRoutes:
+        namespaces:
+          from: Same

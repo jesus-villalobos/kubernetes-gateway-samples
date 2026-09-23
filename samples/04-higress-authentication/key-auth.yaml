@@ -1,0 +1,35 @@
+# Higress key-auth Wasm plugin: two consumers (gold, bronze) authenticated by an
+# x-api-key header, and a per-host allow-list that admits only gold. This shows
+# two distinct outcomes:
+#   - authentication: no key or a bad key -> 401 (who are you?)
+#   - authorization:  valid bronze key, not allowed here -> 403
+#   - allowed:        valid gold key -> 200
+#
+# Note: confirm the plugin OCI image/version for your installed Higress, and
+# that the match key resolves your route (Higress has historically matched by
+# domain/ingress; a domain match is used here for portability).
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: key-auth
+  namespace: higress-system
+spec:
+  phase: AUTHN
+  priority: 310
+  url: oci://higress-registry.cn-hangzhou.cr.aliyuncs.com/plugins/key-auth:1.0.0
+  defaultConfig:
+    consumers:
+      - name: gold
+        credential: cred-gold-abcdef
+      - name: bronze
+        credential: cred-bronze-uvwxyz
+    keys:
+      - x-api-key
+    in_header: true
+    global_auth: false
+  matchRules:
+    - config:
+        allow:
+          - gold
+      domain:
+        - api.example.com

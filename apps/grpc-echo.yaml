@@ -1,0 +1,53 @@
+# gRPC workload for the ambient sample: a 3-replica fortio server plus a client
+# pod. fortio serves gRPC on 8079 and can generate gRPC load, which lets the
+# sample show L4 connection pinning vs L7 per-request spreading.
+# Applied with `kubectl -n <grpc-namespace> apply` (namespace not hard-coded).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-echo
+  labels: { app: grpc-echo }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: grpc-echo } }
+  template:
+    metadata:
+      labels: { app: grpc-echo }
+    spec:
+      containers:
+        - name: fortio
+          image: fortio/fortio:latest
+          args: ["server", "-loglevel", "info"]
+          ports:
+            - { containerPort: 8079, name: grpc }
+            - { containerPort: 8080, name: http }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grpc-echo
+  labels: { app: grpc-echo }
+spec:
+  selector: { app: grpc-echo }
+  ports:
+    - name: grpc
+      port: 8079
+      targetPort: 8079
+      appProtocol: grpc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grpc-client
+  labels: { app: grpc-client }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: grpc-client } }
+  template:
+    metadata:
+      labels: { app: grpc-client }
+    spec:
+      containers:
+        - name: fortio
+          image: fortio/fortio:latest
+          command: ["sleep", "infinity"]

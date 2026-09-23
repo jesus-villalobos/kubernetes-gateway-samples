@@ -1,0 +1,42 @@
+# Istio's native API, used to show a capability the core Gateway API lacks:
+# regex-based path rewrite (uriRegexRewrite, RE2). Binds to the istio ingress
+# gateway. Rewrites /api/<version>/<resource> -> /<resource>?ver=<version>.
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: regex-gateway
+  namespace: istio-demo
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - api.example.com
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: regex-rewrite
+  namespace: istio-demo
+spec:
+  hosts:
+    - api.example.com
+  gateways:
+    - regex-gateway
+  http:
+    - match:
+        - uri:
+            regex: "/api/(v[0-9]+)/(.*)"
+      rewrite:
+        uriRegexRewrite:
+          match: "/api/(v[0-9]+)/(.*)"
+          rewrite: "/\\2?ver=\\1"
+      route:
+        - destination:
+            host: echo.istio-demo.svc.cluster.local
+            port:
+              number: 80

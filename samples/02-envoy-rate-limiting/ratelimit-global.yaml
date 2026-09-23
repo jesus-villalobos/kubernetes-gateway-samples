@@ -1,0 +1,33 @@
+# GLOBAL rate limit: enforced across all gateway replicas by the Rate Limit
+# Service (Redis-backed), keyed per user via the x-user header. A "bronze"
+# caller gets a low ceiling; a "gold" caller a high one; the count is shared
+# cluster-wide rather than per pod.
+# Note: confirm the global rateLimit + clientSelectors schema for your version.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: echo-global-rl
+  namespace: envoy-demo
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: echo-route
+  rateLimit:
+    type: Global
+    global:
+      rules:
+        - clientSelectors:
+            - headers:
+                - name: x-user
+                  value: bronze
+          limit:
+            requests: 3
+            unit: Minute
+        - clientSelectors:
+            - headers:
+                - name: x-user
+                  value: gold
+          limit:
+            requests: 100
+            unit: Minute

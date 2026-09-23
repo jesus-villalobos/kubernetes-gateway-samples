@@ -1,0 +1,65 @@
+# HTTP echo app used by the routing, rate-limiting, header, and auth samples.
+# It reflects the request (method, path, headers, and serving pod hostname) back
+# as JSON, so every sample can prove what the gateway did without a custom app.
+# Applied into each gateway namespace with `kubectl -n <ns> apply` (no namespace
+# is hard-coded here on purpose).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-v1
+  labels: { app: echo, version: v1 }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: echo, version: v1 } }
+  template:
+    metadata:
+      labels: { app: echo, version: v1 }
+    spec:
+      containers:
+        - name: echo
+          image: ealen/echo-server:0.9.2
+          env: [ { name: ECHO_VERSION, value: "v1" } ]
+          ports: [ { containerPort: 80 } ]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-v2
+  labels: { app: echo, version: v2 }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: echo, version: v2 } }
+  template:
+    metadata:
+      labels: { app: echo, version: v2 }
+    spec:
+      containers:
+        - name: echo
+          image: ealen/echo-server:0.9.2
+          env: [ { name: ECHO_VERSION, value: "v2" } ]
+          ports: [ { containerPort: 80 } ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+  labels: { app: echo }
+spec:
+  selector: { app: echo }
+  ports: [ { name: http, port: 80, targetPort: 80 } ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-v1
+spec:
+  selector: { app: echo, version: v1 }
+  ports: [ { name: http, port: 80, targetPort: 80 } ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-v2
+spec:
+  selector: { app: echo, version: v2 }
+  ports: [ { name: http, port: 80, targetPort: 80 } ]

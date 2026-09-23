@@ -1,0 +1,51 @@
+# Enables Envoy Gateway's global rate limiting, which needs an external Rate
+# Limit Service backed by Redis. Local rate limiting needs none of this; the
+# rate-limiting sample contrasts the two.
+#
+# Note: confirm the EnvoyGateway spec.rateLimit schema matches your installed
+# Envoy Gateway version (it has changed across releases); this is the 1.2.x form.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: envoy-gateway-config
+  namespace: envoy-gateway-system
+data:
+  envoy-gateway.yaml: |
+    apiVersion: gateway.envoyproxy.io/v1alpha1
+    kind: EnvoyGateway
+    provider:
+      type: Kubernetes
+    gateway:
+      controllerName: gateway.envoyproxy.io/gatewayclass-controller
+    rateLimit:
+      backend:
+        type: Redis
+        redis:
+          url: rate-limit-redis.envoy-gateway-system.svc.cluster.local:6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rate-limit-redis
+  namespace: envoy-gateway-system
+  labels: { app: rate-limit-redis }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: rate-limit-redis } }
+  template:
+    metadata:
+      labels: { app: rate-limit-redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports: [ { containerPort: 6379 } ]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rate-limit-redis
+  namespace: envoy-gateway-system
+spec:
+  selector: { app: rate-limit-redis }
+  ports: [ { port: 6379, targetPort: 6379 } ]

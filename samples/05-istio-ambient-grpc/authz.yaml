@@ -1,0 +1,20 @@
+# East-west authorization enforced at the waypoint: only the grpc-client
+# workload identity may call grpc-echo. Identity-based policy between apps, no
+# application code. Both workloads are in grpc-demo and ambient-enrolled, so
+# they receive workload identities.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: grpc-echo-allow-client-only
+  namespace: grpc-demo
+spec:
+  targetRefs:
+    - group: ""
+      kind: Service
+      name: grpc-echo
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/grpc-demo/sa/default"

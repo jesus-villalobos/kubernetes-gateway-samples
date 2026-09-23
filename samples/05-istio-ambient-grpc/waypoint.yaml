@@ -1,0 +1,17 @@
+# A waypoint proxy for the gRPC namespace. It is an ordinary Gateway API object
+# (gatewayClassName: istio-waypoint) on the HBONE mesh port. Adding it turns on
+# L7 processing, which lets Istio spread individual gRPC requests across pods
+# instead of pinning a whole HTTP/2 connection to one pod.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint
+  namespace: grpc-demo
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+    - name: mesh
+      port: 15008
+      protocol: HBONE

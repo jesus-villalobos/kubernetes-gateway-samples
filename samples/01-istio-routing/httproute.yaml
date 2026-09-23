@@ -1,0 +1,45 @@
+# One standard HTTPRoute showing the portable core: path match, header-based
+# canary, weighted split, and a core prefix rewrite. This same file works
+# unchanged on any conformant Gateway API implementation.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo-route
+  namespace: istio-demo
+spec:
+  parentRefs:
+    - name: demo-gateway
+  hostnames:
+    - api.example.com
+  rules:
+    # Header-based canary: opt-in preview traffic goes to v2.
+    - matches:
+        - path: { type: PathPrefix, value: /echo }
+          headers:
+            - name: x-preview
+              value: "true"
+      backendRefs:
+        - name: echo-v2
+          port: 80
+    # Default /echo: weighted split 90/10 across v1 and v2.
+    - matches:
+        - path: { type: PathPrefix, value: /echo }
+      backendRefs:
+        - name: echo-v1
+          port: 80
+          weight: 90
+        - name: echo-v2
+          port: 80
+          weight: 10
+    # Core prefix rewrite (standard, not regex): /legacy/... -> /...
+    - matches:
+        - path: { type: PathPrefix, value: /legacy }
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: echo
+          port: 80

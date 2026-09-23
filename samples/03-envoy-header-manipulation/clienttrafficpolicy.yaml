@@ -1,0 +1,17 @@
+# Envoy-specific advanced header handling: detect and trust the real client IP
+# and expose it via X-Forwarded-For. This is a ClientTrafficPolicy, an Envoy
+# Gateway CRD with no equivalent in the core Gateway API.
+# Note: confirm the clientIPDetection schema for your Envoy Gateway version.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: client-ip
+  namespace: envoy-demo
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: eg-hdr-gateway
+  clientIPDetection:
+    xForwardedFor:
+      numTrustedHops: 1

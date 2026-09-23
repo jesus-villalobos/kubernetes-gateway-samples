@@ -1,0 +1,20 @@
+# LOCAL rate limit: a per-replica token bucket enforced by each Envoy pod with
+# no external coordination. 5 requests/minute so it trips visibly in a burst.
+# Note: confirm the BackendTrafficPolicy schema for your Envoy Gateway version.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: echo-local-rl
+  namespace: envoy-demo
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: echo-route
+  rateLimit:
+    type: Local
+    local:
+      rules:
+        - limit:
+            requests: 5
+            unit: Minute
